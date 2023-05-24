@@ -1,20 +1,23 @@
+import { useEffect } from 'react'
+import { api } from '../src/lib/api'
 import { StatusBar } from 'expo-status-bar'
 import { ImageBackground, View, Text, TouchableOpacity } from 'react-native'
+import * as SecureStore from 'expo-secure-store'
 
 import {
   useFonts,
   Roboto_400Regular,
   Roboto_700Bold,
 } from '@expo-google-fonts/roboto'
+import { useRouter } from 'expo-router'
 
 import { BaiJamjuree_700Bold } from '@expo-google-fonts/bai-jamjuree'
 import { styled } from 'nativewind'
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session'
 
-import blurBg from './src/assets/bg-blur.png'
-import Stripes from './src/assets/stripes.svg'
-import NLWLogo from './src/assets/nlw-spacetime-logo.svg'
-import { useEffect } from 'react'
+import blurBg from '../src/assets/bg-blur.png'
+import Stripes from '../src/assets/stripes.svg'
+import NLWLogo from '../src/assets/nlw-spacetime-logo.svg'
 
 const StyledStripes = styled(Stripes)
 
@@ -26,13 +29,15 @@ const discovery = {
 }
 
 export default function App() {
+  const router = useRouter()
+
   const [hasLoadedFonts] = useFonts({
     Roboto_400Regular,
     Roboto_700Bold,
     BaiJamjuree_700Bold,
   })
 
-  const [request, response, signInWithGithub] = useAuthRequest(
+  const [, response, signInWithGithub] = useAuthRequest(
     {
       clientId: 'a159d17e1fb4c4729acf',
       scopes: ['identity'],
@@ -43,9 +48,28 @@ export default function App() {
     discovery,
   )
 
+  async function handleGithubOAuthCode(code: string) {
+    const response = await api.post('/register', {
+      code,
+    })
+    const { token } = response.data
+
+    await SecureStore.setItemAsync('token', token)
+
+    router.push('/memories')
+  }
+
   useEffect(() => {
+    // console.log(
+    //   makeRedirectUri({
+    //     scheme: 'nlwspacetime',
+    //   }),
+    // )
+
     if (response?.type === 'success') {
       const { code } = response.params
+
+      handleGithubOAuthCode(code)
     }
   }, [response])
 
@@ -90,5 +114,3 @@ export default function App() {
     </ImageBackground>
   )
 }
-
-// 1:20:34
